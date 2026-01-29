@@ -22,17 +22,12 @@ const protect = async (req, res, next) => {
 
     // Make sure token exists
     if (!token) {
-      console.log('🔒 Auth: No token found in request');
-      console.log('🔒 Auth: Token source:', tokenSource);
       return next(new AppError('Not authorized to access this route', 401));
     }
-
-    console.log('🔓 Auth: Token found from', tokenSource, '- Length:', token.length);
 
     try {
       // Verify token
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      console.log('🔓 Auth: Token verified successfully');
 
       // Get user from token
       const user = await User.findByPk(decoded.id, {
@@ -40,22 +35,18 @@ const protect = async (req, res, next) => {
       });
 
       if (!user) {
-        console.log('🔒 Auth: User not found for token ID:', decoded.id);
         return next(new AppError('No user found with this token', 401));
       }
 
       // Check if user is active - handle undefined isActive as active
       const isUserActive = user.isActive === undefined || user.isActive === true;
       if (!isUserActive) {
-        console.log('🔒 Auth: User account is deactivated:', user.email);
         return next(new AppError('User account is deactivated', 401));
       }
 
       req.user = user;
       next();
     } catch (err) {
-      console.log('🔒 Auth: Token verification failed:', err.name);
-      
       if (err.name === 'TokenExpiredError') {
         return next(new AppError('Token has expired', 401));
       }
@@ -65,7 +56,7 @@ const protect = async (req, res, next) => {
       return next(new AppError('Not authorized to access this route', 401));
     }
   } catch (err) {
-    console.error('🔒 Auth: Server error during authentication:', err.message);
+    console.error('Auth: Server error during authentication:', err.message);
     return next(new AppError('Server error during authentication', 500));
   }
 };

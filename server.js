@@ -6,13 +6,6 @@ const rateLimit = require('express-rate-limit');
 const path = require('path');
 const cookieParser = require('cookie-parser');
 
-// Log environment status
-console.log('🔧 Server starting...');
-console.log('📍 Node environment:', process.env.NODE_ENV || 'development');
-console.log('🔑 JWT_SECRET loaded:', process.env.JWT_SECRET ? 'YES (length: ' + process.env.JWT_SECRET.length + ')' : 'NO - CHECK .env FILE!');
-console.log('🌐 Frontend URL:', process.env.FRONTEND_URL || 'http://localhost:5173');
-console.log('🗄️ Database config:', process.env.DB_HOST ? 'configured' : 'using default');
-
 // Import database connection
 const sequelize = require('./config/database');
 
@@ -194,16 +187,8 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 // Logging middleware
 app.use(requestLogger);
 
-// IMMEDIATE REQUEST LOGGING - logs every request immediately
-app.use((req, res, next) => {
-  console.log(`📥 INCOMING REQUEST: ${req.method} ${req.url} from ${req.ip}`);
-  console.log(`   Headers: Origin=${req.get('Origin')}, Content-Type=${req.get('Content-Type')}`);
-  next();
-});
-
-// Health check endpoint - TEST THIS FIRST
+// Health check endpoint
 app.get('/api/test', (req, res) => {
-  console.log('✅ Test endpoint hit from:', req.ip);
   res.status(200).json({
     status: 'OK',
     message: 'Server is running',
@@ -217,7 +202,6 @@ app.get('/api/test', (req, res) => {
 
 // Debug endpoint to check environment
 app.get('/api/debug', (req, res) => {
-  console.log('✅ Debug endpoint hit');
   res.status(200).json({
     env: {
       NODE_ENV: process.env.NODE_ENV,
@@ -279,9 +263,6 @@ app.use(errorHandler);
 
 // Database connection and server start
 const PORT = process.env.PORT || 5000;
-
-// Log port information for debugging
-console.log(`🚀 Starting server on port: ${PORT}`);
 
 const startServer = async () => {
   try {

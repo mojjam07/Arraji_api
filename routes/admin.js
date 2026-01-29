@@ -1048,13 +1048,29 @@ router.put('/documents/:id/status', [
   body('rejectionReason').optional().trim()
 ], async (req, res, next) => {
   try {
+    // DEBUG: Log the status update attempt
+    console.log('═══════════════════════════════════════════════════════════');
+    console.log('🔍 DEBUG: Document Status Update Attempt');
+    console.log('─────────────────────────────────────────────────────────────');
+    console.log(`Document ID: ${req.params.id}`);
+    console.log(`New Status: ${req.body.status}`);
+    console.log(`Rejection Reason: ${req.body.rejectionReason || 'N/A'}`);
+    console.log(`Admin User ID: ${req.user.id}`);
+    console.log(`Admin User Role: ${req.user.role}`);
+    console.log(`Timestamp: ${new Date().toISOString()}`);
+    console.log('');
+
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
+      console.log('❌ Validation failed:', errors.array());
       return res.status(400).json({ success: false, message: 'Validation failed', errors: errors.array() });
     }
 
     const { id } = req.params;
     const { status, rejectionReason } = req.body;
+
+    // DEBUG: Log the search for document
+    console.log('🔍 Searching for document...');
 
     const document = await Document.findByPk(id, {
       include: [
@@ -1063,9 +1079,35 @@ router.put('/documents/:id/status', [
       ]
     });
 
-    if (!document) {
+    // DEBUG: Log the document search result
+    if (document) {
+      console.log('✅ Document FOUND:');
+      console.log(`   ID: ${document.id}`);
+      console.log(`   File Name: ${document.fileName}`);
+      console.log(`   Document Type: ${document.documentType}`);
+      console.log(`   Current Status: ${document.status}`);
+      console.log(`   User ID: ${document.userId}`);
+      console.log(`   Application ID: ${document.applicationId || 'N/A'}`);
+    } else {
+      console.log('❌ Document NOT FOUND');
+      // Try direct SQL query to debug
+      try {
+        const directQuery = await Document.sequelize.query(
+          `SELECT id, file_name, document_type, status, user_id, application_id FROM "documents" WHERE id = :id`,
+          { replacements: { id }, type: Document.sequelize.QueryTypes.SELECT }
+        );
+        console.log('   Direct SQL Query Result:', directQuery.length > 0 ? 'Record found' : 'No record found');
+        if (directQuery.length > 0) {
+          console.log('   Record details:', JSON.stringify(directQuery[0], null, 2));
+        }
+      } catch (sqlError) {
+        console.log('   SQL Query Error:', sqlError.message);
+      }
       return next(new AppError('Document not found', 404));
     }
+
+    console.log('');
+    console.log('📝 Updating document status...');
 
     // Update document
     const updateData = { status };
@@ -1078,8 +1120,20 @@ router.put('/documents/:id/status', [
 
     await document.update(updateData);
 
+    console.log('✅ Document status updated successfully');
+    console.log(`   New Status: ${status}`);
+    if (status === 'approved') {
+      console.log(`   Verified At: ${document.verifiedAt}`);
+    }
+    if (status === 'rejected' && rejectionReason) {
+      console.log(`   Rejection Reason: ${rejectionReason}`);
+    }
+
     // Log admin action
     auditLogger.adminAction(req.user.id, 'update_document_status', id, { status, rejectionReason });
+
+    console.log('');
+    console.log('🔔 Creating notification for user...');
 
     // Create notification for user if document is rejected
     if (status === 'rejected' && document.userId) {
@@ -1092,6 +1146,7 @@ router.put('/documents/:id/status', [
         priority: 'high',
         createdBy: req.user.id
       });
+      console.log('✅ Notification created for rejected document');
     }
 
     // Create notification for user if document is approved
@@ -1105,7 +1160,10 @@ router.put('/documents/:id/status', [
         priority: 'medium',
         createdBy: req.user.id
       });
+      console.log('✅ Notification created for approved document');
     }
+
+    console.log('═══════════════════════════════════════════════════════════');
 
     res.json({
       success: true,
@@ -1113,6 +1171,8 @@ router.put('/documents/:id/status', [
       data: { document }
     });
   } catch (error) {
+    console.log('❌ Document status update error:', error.message);
+    console.log('   Stack:', error.stack);
     next(error);
   }
 });

@@ -147,17 +147,8 @@ router.post('/', upload.single('file'), [
   require('express-validator').body('description').optional().trim().isLength({ max: 500 })
 ], async (req, res, next) => {
   try {
-    // Log incoming request for debugging
-    console.log('📤 Document upload request received:', {
-      userId: req.user?.id,
-      fileName: req.file?.originalname,
-      documentType: req.body?.documentType,
-      applicationId: req.body?.applicationId
-    });
-
     const errors = require('express-validator').validationResult(req);
     if (!errors.isEmpty()) {
-      console.log('❌ Validation failed:', errors.array());
       return res.status(400).json({
         success: false,
         message: 'Validation failed',
@@ -166,7 +157,6 @@ router.post('/', upload.single('file'), [
     }
 
     if (!req.file) {
-      console.log('❌ No file uploaded');
       return next(new AppError('No file uploaded', 400));
     }
 
@@ -175,23 +165,19 @@ router.post('/', upload.single('file'), [
     // Handle null/empty applicationId values from frontend
     if (applicationId === 'null' || applicationId === 'undefined' || applicationId === '' || applicationId === null || applicationId === undefined) {
       applicationId = null;
-      console.log('📝 Setting applicationId to null');
     }
 
     // Verify application belongs to user if applicationId is provided
     if (applicationId) {
-      console.log('🔍 Verifying application:', applicationId);
       const application = await Application.findOne({
         where: { id: applicationId, userId: req.user.id }
       });
 
       if (!application) {
-        console.log('❌ Application not found or not owned by user');
         return next(new AppError('Application not found', 404));
       }
     }
 
-    console.log('💾 Creating document record...');
     const document = await Document.create({
       userId: req.user.id,
       applicationId: applicationId || null,
@@ -205,7 +191,6 @@ router.post('/', upload.single('file'), [
       description: description || null
     });
 
-    console.log('✅ Document created successfully:', document.id);
     securityLogger.fileUpload(req.user.id, req.file.originalname, req.file.size, req.ip);
     auditLogger.userAction(req.user.id, 'upload_document', { documentId: document.id, documentType });
 
@@ -215,7 +200,7 @@ router.post('/', upload.single('file'), [
       data: { document }
     });
   } catch (error) {
-    console.error('❌ Document upload error:', {
+    console.error('Document upload error:', {
       message: error.message,
       stack: error.stack,
       code: error.code,
