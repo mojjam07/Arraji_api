@@ -17,13 +17,19 @@ const errorHandler = (err, req, res, next) => {
   let error = { ...err };
   error.message = err.message;
 
-  // Log error
-  logger.error(err.message, {
+  // Log error with full details for debugging
+  logger.error('ERROR DETAILS:', {
+    message: err.message,
+    name: err.name,
+    code: err.code,
+    stack: err.stack,
     method: req.method,
     url: req.url,
     ip: req.ip,
     userAgent: req.get('User-Agent'),
-    stack: err.stack
+    body: req.body, // Log request body for debugging (exclude sensitive data in production)
+    params: req.params,
+    query: req.query
   });
 
   // Mongoose bad ObjectId

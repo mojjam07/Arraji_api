@@ -62,13 +62,17 @@ router.post('/register', [
 
     const { email, password, firstName, lastName, phoneNumber } = req.body;
 
+    console.log('📝 Registration attempt for:', email.toLowerCase());
+
     // Check if user exists
     const existingUser = await User.findOne({ where: { email: email.toLowerCase() } });
     if (existingUser) {
+      console.log('❌ Registration failed: User already exists:', email.toLowerCase());
       return next(new AppError('User already exists with this email', 400));
     }
 
     // Create user - password will be hashed by Sequelize beforeCreate hook
+    console.log('📝 Creating new user:', email.toLowerCase());
     const user = await User.create({
       email: email.toLowerCase(),
       password: password, // Pass plaintext password, hook will hash it
@@ -78,6 +82,7 @@ router.post('/register', [
       role: 'user', // Default role
       isActive: true
     });
+    console.log('✅ User created successfully:', user.id);
 
     // Generate token
     const token = generateToken(user.id);
@@ -95,6 +100,8 @@ router.post('/register', [
       }
     });
   } catch (error) {
+    console.error('❌ Registration error:', error.message);
+    console.error('❌ Registration error stack:', error.stack);
     next(error);
   }
 });
@@ -281,3 +288,4 @@ router.post('/change-password', [
 });
 
 module.exports = router;
+

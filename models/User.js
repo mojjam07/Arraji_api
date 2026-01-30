@@ -77,6 +77,7 @@ module.exports = (sequelize, DataTypes) => {
     isActive: {
       type: DataTypes.BOOLEAN,
       defaultValue: true,
+      allowNull: true, // Allow null for legacy data compatibility
       field: 'is_active'
     },
     isVerified: {
