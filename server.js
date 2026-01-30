@@ -56,9 +56,23 @@ app.use(helmet({
   }
 }));
 
-// CORS configuration
+// CORS configuration - Allow multiple origins for development and production
+const allowedOrigins = [
+  'http://localhost:5173',
+  'https://ar-raji.vercel.app',
+  // 'https://www.ar-raji.vercel.app' // Uncomment when custom domain is set up
+];
+
 const corsOptions = {
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps, curl, Postman)
+    // or requests from allowed origins
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-ID']
