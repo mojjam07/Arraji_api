@@ -5,7 +5,7 @@ let sequelize;
 
 // Helper function to create Sequelize instance with common options
 const createSequelizeInstance = (dbUrl, options = {}) => {
-  return new Sequelize(dbUrl, {
+  const seq = new Sequelize(dbUrl, {
     dialect: 'postgres',
     logging: process.env.NODE_ENV === 'development' ? console.log : false,
     pool: {
@@ -44,11 +44,33 @@ const createSequelizeInstance = (dbUrl, options = {}) => {
     },
     ...options
   });
+
+  // Add connection event logging for debugging
+  seq.addHook('beforeConnect', (config) => {
+    console.log('🔌 [DATABASE] Attempting to connect to PostgreSQL...');
+    console.log('🔌 [DATABASE] Database:', process.env.DB_NAME || 'using DATABASE_URL');
+    console.log('🔌 [DATABASE] Host:', process.env.DB_HOST || 'from DATABASE_URL');
+    console.log('🔌 [DATABASE] Environment:', process.env.NODE_ENV || 'development');
+  });
+
+  seq.addHook('connect', () => {
+    console.log('✅ [DATABASE] Successfully connected to PostgreSQL');
+  });
+
+  seq.addHook('disconnect', (instance, error) => {
+    console.warn('⚠️  [DATABASE] Disconnected from PostgreSQL', error ? `- Error: ${error.message}` : '');
+  });
+
+  seq.addHook('error', (error) => {
+    console.error('❌ [DATABASE] Connection error:', error.message);
+  });
+
+  return seq;
 };
 
 // Check if DATABASE_URL is provided (for Render deployment)
 if (process.env.DATABASE_URL) {
-  console.log('Using DATABASE_URL for database connection');
+  console.log('🔧 [DATABASE] Using DATABASE_URL for database connection');
   sequelize = createSequelizeInstance(process.env.DATABASE_URL);
 } else {
   // Fallback to individual environment variables (for local development)
@@ -64,14 +86,14 @@ if (process.env.DATABASE_URL) {
 
   // Database configuration for local development
   const dbUrl = `postgres://${process.env.DB_USER}:${process.env.DB_PASSWORD}@${process.env.DB_HOST}:${process.env.DB_PORT}/${process.env.DB_NAME}`;
-  console.log('Using individual environment variables for database connection');
+  console.log('🔧 [DATABASE] Using individual environment variables for database connection');
   sequelize = createSequelizeInstance(dbUrl, {
     host: process.env.DB_HOST,
     port: parseInt(process.env.DB_PORT, 10)
   });
 }
 
-// Note: Sequelize v6.x handles connection events internally through the pool configuration
-// and retry mechanism. No external event listeners are needed or exposed by the library.
-
+// Export the sequelize instance for use across the application
+// This ensures a SINGLE connection is used throughout the app
 module.exports = sequelize;
+

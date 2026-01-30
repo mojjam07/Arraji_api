@@ -6,7 +6,7 @@ const rateLimit = require('express-rate-limit');
 const path = require('path');
 const cookieParser = require('cookie-parser');
 
-// Import database connection
+// Import database connection - THIS IS THE SINGLE INSTANCE
 const sequelize = require('./config/database');
 
 // Import routes
@@ -20,6 +20,7 @@ const notificationRoutes = require('./routes/notifications');
 const adminRoutes = require('./routes/admin');
 
 // Import models to ensure associations are loaded
+// This uses the SAME sequelize instance from config/database.js
 require('./models');
 
 // Import middleware
@@ -284,27 +285,64 @@ const PORT = process.env.PORT || 5000;
 
 const startServer = async () => {
   try {
-    // Test database connection
-    await sequelize.authenticate();
-    console.log('Database connection established successfully.');
+    // Test database connection with detailed logging
+    console.log('🔌 [SERVER] Attempting to connect to database...');
+    
+    try {
+      await sequelize.authenticate();
+      console.log('✅ [SERVER] Database connection established successfully.');
+    } catch (error) {
+      console.error('❌ [SERVER] Unable to connect to database:');
+      console.error('   Error name:', error.name);
+      console.error('   Error message:', error.message);
+      console.error('   This is likely a configuration issue.');
+      console.error('   Please check:');
+      console.error('   - DATABASE_URL environment variable is set');
+      console.error('   - Database server is running and accessible');
+      console.error('   - Network/firewall rules allow connection');
+      
+      // Don't exit immediately in development, allow the server to start anyway
+      // This helps with debugging connection issues
+      if (process.env.NODE_ENV === 'production') {
+        process.exit(1);
+      }
+      console.warn('⚠️  [SERVER] Starting server WITHOUT database connection (development mode)');
+    }
 
-    // Sync database (in development)
-    if (process.env.NODE_ENV === 'development') {
-      await sequelize.sync({ alter: true });
-      console.log('Database synchronized successfully.');
+    // Sync database (in development only)
+    if (process.env.NODE_ENV === 'development' && sequelize) {
+      try {
+        await sequelize.sync({ alter: true });
+        console.log('✅ [SERVER] Database synchronized successfully.');
+      } catch (error) {
+        console.warn('⚠️  [SERVER] Database sync failed:', error.message);
+      }
     }
 
     // Start server
     app.listen(PORT, () => {
-      console.log(`Server is running on port ${PORT}`);
-      console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+      console.log(`🚀 [SERVER] Server is running on port ${PORT}`);
+      console.log(`🌍 [SERVER] Environment: ${process.env.NODE_ENV || 'development'}`);
+      console.log(`📡 [SERVER] API available at: http://localhost:${PORT}/api`);
     });
   } catch (error) {
-    console.error('Unable to start server:', error);
+    console.error('❌ [SERVER] Unable to start server:', error);
     process.exit(1);
   }
 };
 
+// Handle uncaught exceptions
+process.on('uncaughtException', (error) => {
+  console.error('❌ [SERVER] Uncaught Exception:', error);
+  process.exit(1);
+});
+
+// Handle unhandled promise rejections
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('❌ [SERVER] Unhandled Rejection at:', promise, 'reason:', reason);
+});
+
 startServer();
 
 module.exports = app;
+
