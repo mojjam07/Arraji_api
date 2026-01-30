@@ -28,6 +28,10 @@ const { requestLogger } = require('./middleware/logger');
 
 const app = express();
 
+// Trust proxy - Required for accurate IP detection behind load balancers/proxies (e.g., Render)
+// This fixes the X-Forwarded-For header validation error from express-rate-limit
+app.set('trust proxy', 1);
+
 // Security middleware with comprehensive headers
 app.use(helmet({
   contentSecurityPolicy: {
