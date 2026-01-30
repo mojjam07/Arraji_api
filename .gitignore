@@ -12,8 +12,6 @@ yarn-error.log*
 .env.test.local
 .env.production.local
 
-seed.js
-
 # Logs
 logs/
 *.log
