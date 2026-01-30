@@ -71,35 +71,7 @@ if (process.env.DATABASE_URL) {
   });
 }
 
-// Connection event handlers for better debugging (Sequelize v6.x compatible)
-// In Sequelize v6.x, we use connectionManager events instead of Sequelize events
-if (sequelize.connectionManager) {
-  sequelize.connectionManager.on('error', (err) => {
-    console.error('Sequelize connection manager error:', err.message);
-  });
-
-  sequelize.connectionManager.on('disconnected', () => {
-    console.warn('Sequelize connection disconnected - will attempt to reconnect on next operation');
-  });
-}
-
-// Test the connection on startup
-const testConnection = async () => {
-  try {
-    await sequelize.authenticate();
-    console.log('✅ Database connection has been established successfully.');
-  } catch (err) {
-    console.error('❌ Unable to connect to the database:', err.message);
-    // Don't exit here in production - let the app continue and handle connection on first request
-    if (process.env.NODE_ENV === 'development') {
-      process.exit(1);
-    }
-  }
-};
-
-// Only test connection immediately in non-production or if not on Render
-if (process.env.NODE_ENV !== 'production' || !process.env.DATABASE_URL) {
-  testConnection();
-}
+// Note: Sequelize v6.x handles connection events internally through the pool configuration
+// and retry mechanism. No external event listeners are needed or exposed by the library.
 
 module.exports = sequelize;
