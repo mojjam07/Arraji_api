@@ -72,15 +72,15 @@ if (process.env.DATABASE_URL) {
 }
 
 // Connection event handlers for better debugging
-sequelize.addListener('error', (err) => {
+sequelize.on('error', (err) => {
   console.error('Sequelize connection error:', err.message);
 });
 
-sequelize.addListener('connectionError', (err) => {
+sequelize.on('connectionError', (err) => {
   console.error('Sequelize connection manager error:', err.message);
 });
 
-sequelize.addListener('disconnected', () => {
+sequelize.on('disconnected', () => {
   console.warn('Sequelize connection disconnected - will attempt to reconnect on next operation');
 });
 
