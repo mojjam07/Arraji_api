@@ -12,8 +12,14 @@ const seedTestData = async () => {
     await sequelize.authenticate();
     console.log('Database connected');
 
-    await sequelize.sync({ alter: true });
-    console.log('Database synced');
+    // Note: Database sync is handled by migrations in production
+    // Only sync in development if tables don't exist yet
+    if (process.env.NODE_ENV === 'development') {
+      await sequelize.sync({ alter: true });
+      console.log('Database synced (development mode)');
+    } else {
+      console.log('Database tables ready (migrations already applied)');
+    }
 
     // Define the allowed users
     const allowedUsers = [

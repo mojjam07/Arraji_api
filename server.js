@@ -309,13 +309,56 @@ const startServer = async () => {
       console.warn('⚠️  [SERVER] Starting server WITHOUT database connection (development mode)');
     }
 
-    // Sync database (in development only)
+    // Sync database / Run migrations based on environment
     if (process.env.NODE_ENV === 'development' && sequelize) {
+      // Development: Use sync with alter to auto-update tables
       try {
         await sequelize.sync({ alter: true });
-        console.log('✅ [SERVER] Database synchronized successfully.');
+        console.log('✅ [SERVER] Database synchronized successfully (development mode).');
       } catch (error) {
         console.warn('⚠️  [SERVER] Database sync failed:', error.message);
+      }
+    } else if (process.env.NODE_ENV === 'production') {
+      // Production: Use Sequelize CLI migrations for reliable schema updates
+      try {
+        console.log('🚀 [SERVER] Running database migrations...');
+        
+        // Use sequelize-cli to run migrations
+        const { execSync } = require('child_process');
+        
+        // Run migrations using npx sequelize-cli
+        const migrateCommand = 'npx sequelize-cli db:migrate';
+        execSync(migrateCommand, {
+          env: process.env,
+          stdio: 'inherit',
+          cwd: __dirname
+        });
+        
+        console.log('✅ [SERVER] Database migrations completed successfully.');
+        
+        // Optional: Run seed data if RUN_SEED environment variable is set to 'true'
+        if (process.env.RUN_SEED === 'true') {
+          try {
+            console.log('🌱 [SERVER] Running seed data...');
+            const seedCommand = 'node seed.js';
+            execSync(seedCommand, {
+              env: process.env,
+              stdio: 'inherit',
+              cwd: __dirname
+            });
+            console.log('✅ [SERVER] Seed data completed successfully.');
+          } catch (seedError) {
+            console.warn('⚠️  [SERVER] Seed data failed:', seedError.message);
+            console.warn('   This may be expected if data already exists.');
+          }
+        }
+      } catch (error) {
+        console.error('❌ [SERVER] Database migration failed:', error.message);
+        console.error('   Please check migration files and database connection.');
+        
+        // In production, we should exit if migrations fail
+        // This ensures we don't run with an inconsistent database schema
+        process.exit(1);
       }
     }
 

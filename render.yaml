@@ -1,0 +1,61 @@
+# Render Deployment Configuration
+# https://render.com/docs/yaml
+#
+# This file configures automatic deployment to Render.
+# Database tables will be created when migrations run on deployment.
+# ==============================================
+
+services:
+  # Backend Web Service
+  - type: web
+    name: arraji-backend
+    env: node
+    region: us-east # Change to your preferred region
+    buildCommand: npm install
+    startCommand: npm start
+    # Health check endpoint
+    healthCheckPath: /api/test
+    
+    # Environment variables (set these in Render Dashboard for security)
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: JWT_SECRET
+        # Generate with: node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
+        # IMPORTANT: Set this in Render Dashboard, don't hardcode here!
+      - key: FRONTEND_URL
+        # Set your production frontend URL in Render Dashboard
+        # e.g., https://ar-raji.vercel.app
+      - key: DATABASE_URL
+        # Render will set this automatically when you create a PostgreSQL database
+      - key: RUN_SEED
+        # Set to 'true' on first deployment to seed admin user and sample data
+        # After initial deployment, set to 'false' or remove
+        value: "false"
+        
+    # Plan (free tier is 'free', change for production)
+    # plan: free
+
+# Database (create this separately in Render dashboard)
+# databases:
+#   - name: arraji_db
+#     plan: free # or standard for production
+#     databaseName: arraji_db
+#     user: arraji
+
+# ==============================================
+# Deployment Instructions:
+# ==============================================
+# 1. Push this render.yaml to your GitHub repository
+# 2. Create a new Web Service in Render
+# 3. Connect your GitHub repository
+# 4. Configure the following environment variables in Render Dashboard:
+#    - JWT_SECRET: Your secure random JWT secret
+#    - FRONTEND_URL: Your production frontend URL
+# 5. Create a PostgreSQL database in Render and attach it to the service
+# 6. Deploy the service
+# 7. Migrations will run automatically on first deployment
+# ==============================================
+
