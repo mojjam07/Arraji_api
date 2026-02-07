@@ -1,7 +1,7 @@
 /**
  * Seed Script - Creates admin, users, and sample applications for testing
  * Run with: node backend/seed.js
- */
+**/
 
 require('dotenv').config();
 const bcrypt = require('bcryptjs');
