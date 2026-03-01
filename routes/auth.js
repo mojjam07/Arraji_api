@@ -73,13 +73,16 @@ router.post('/register', [
 
     // Create user - password will be hashed by Sequelize beforeCreate hook
     console.log('📝 Creating new user:', email.toLowerCase());
+    
+    // Security: Always set role to 'user' - never allow role tampering from registration
+    // Admin role can only be set through server startup (ensureAdminUser function)
     const user = await User.create({
       email: email.toLowerCase(),
       password: password, // Pass plaintext password, hook will hash it
       firstName: firstName.trim(),
       lastName: lastName.trim(),
       phoneNumber: phoneNumber || null,
-      role: 'user', // Default role
+      role: 'user', // Always default to user - admin role is set server-side only
       isActive: true
     });
     console.log('✅ User created successfully:', user.id);

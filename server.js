@@ -283,6 +283,54 @@ app.use(errorHandler);
 // Database connection and server start
 const PORT = process.env.PORT || 5000;
 
+// Function to ensure admin user exists
+const ensureAdminUser = async () => {
+  try {
+    const { User } = require('./models');
+    const bcrypt = require('bcryptjs');
+    
+    // Get admin credentials from environment variables or use defaults
+    const adminEmail = process.env.ADMIN_EMAIL || 'admin@arraji.com';
+    const adminPassword = process.env.ADMIN_PASSWORD || 'Arraji01';
+    
+    // Check if admin already exists
+    const existingAdmin = await User.findOne({ 
+      where: { email: adminEmail } 
+    });
+    
+    if (existingAdmin) {
+      // Check if role needs to be updated to admin
+      if (existingAdmin.role !== 'admin') {
+        await existingAdmin.update({ role: 'admin', isActive: true, isVerified: true });
+        console.log('✅ [ADMIN] Updated existing user to admin role:', adminEmail);
+      } else {
+        console.log('👤 [ADMIN] Admin user already exists:', adminEmail);
+      }
+      return;
+    }
+    
+    // Create admin user with hashed password
+    const salt = await bcrypt.genSalt(12);
+    const hashedPassword = await bcrypt.hash(adminPassword, salt);
+    
+    await User.create({
+      email: adminEmail,
+      password: hashedPassword,
+      firstName: 'Admin',
+      lastName: 'User',
+      role: 'admin',
+      isActive: true,
+      isVerified: true
+    });
+    
+    console.log('✅ [ADMIN] Admin user created successfully!');
+    console.log('   Email:', adminEmail);
+    console.log('   (Password set from ADMIN_PASSWORD env or default)');
+  } catch (error) {
+    console.error('❌ [ADMIN] Failed to create admin user:', error.message);
+  }
+};
+
 const startServer = async () => {
   try {
     // Test database connection with detailed logging
@@ -360,6 +408,12 @@ const startServer = async () => {
         // This ensures we don't run with an inconsistent database schema
         process.exit(1);
       }
+    }
+
+    // Ensure admin user exists (both development and production)
+    // This guarantees admin login works even if seed didn't run
+    if (sequelize) {
+      await ensureAdminUser();
     }
 
     // Start server

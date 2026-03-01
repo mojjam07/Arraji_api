@@ -53,14 +53,19 @@ router.put('/profile', [
       });
     }
 
-    const { firstName, lastName, phoneNumber, address, city, country } = req.body;
+    const { firstName, lastName, phoneNumber, address, city, country, role } = req.body;
+
+    // Security: Prevent role tampering through profile updates
+    if (role) {
+      return next(new AppError('Role cannot be changed through profile update', 403));
+    }
 
     const user = await User.findByPk(req.user.id);
     if (!user) {
       return next(new AppError('User not found', 404));
     }
 
-    // Update user profile
+    // Update user profile (never allow role change)
     await user.update({
       ...(firstName && { firstName }),
       ...(lastName && { lastName }),
@@ -68,6 +73,7 @@ router.put('/profile', [
       ...(address && { address }),
       ...(city && { city }),
       ...(country && { country })
+      // Note: role is intentionally excluded to prevent privilege escalation
     });
 
     securityLogger.dataAccess(req.user.id, 'update', 'profile', req.ip);
