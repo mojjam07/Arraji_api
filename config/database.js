@@ -6,7 +6,7 @@ let sequelize;
 const createSequelizeInstance = (dbUrl, options = {}) => {
   return new Sequelize(dbUrl, {
     dialect: 'postgres',
-    logging: process.env.NODE_ENV === 'development' ? console.log : false,
+    logging: false,
     pool: {
       max: parseInt(process.env.DB_POOL_MAX) || 5,
       min: parseInt(process.env.DB_POOL_MIN) || 0,
