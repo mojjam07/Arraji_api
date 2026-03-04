@@ -303,7 +303,6 @@ const PORT = process.env.PORT || 5000;
 const ensureAdminUser = async () => {
   try {
     const { User } = require('./models');
-    const bcrypt = require('bcryptjs');
     
     // Get admin credentials from environment variables or use defaults
     const adminEmail = process.env.ADMIN_EMAIL || 'admin@arraji.com';
@@ -325,13 +324,11 @@ const ensureAdminUser = async () => {
       return;
     }
     
-    // Create admin user with hashed password
-    const salt = await bcrypt.genSalt(12);
-    const hashedPassword = await bcrypt.hash(adminPassword, salt);
-    
+    // Create admin user - pass plain password, let Sequelize hook hash it
+    // This prevents double-hashing which would prevent login
     await User.create({
       email: adminEmail,
-      password: hashedPassword,
+      password: adminPassword, // Plain text - beforeCreate hook will hash it
       firstName: 'Admin',
       lastName: 'User',
       role: 'admin',

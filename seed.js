@@ -4,7 +4,6 @@
 **/
 
 require('dotenv').config();
-const bcrypt = require('bcryptjs');
 const { sequelize, User, Application } = require('./models');
 
 const seedTestData = async () => {
@@ -46,18 +45,28 @@ const seedTestData = async () => {
     // Process each allowed user
     const userMap = {}; // Store user IDs by email for creating applications
     for (const userData of allowedUsers) {
-      const hashedPassword = await bcrypt.hash(userData.password, 12);
+      // NOTE: Pass plain text password - let Sequelize's beforeCreate hook handle hashing
+      // This prevents double-hashing which would prevent login
       const existingUser = await User.findOne({ where: { email: userData.email } });
 
       if (existingUser) {
-        // Update existing user if needed
+        // Check if password needs to be re-hashed (e.g., different salt rounds)
+        // Re-set the password to trigger the hook and ensure it's properly hashed
+        const needsPasswordRehash = true; // Always rehash to ensure consistency
+        
+        // Update existing user - use plain password, let hook hash it
         const needsUpdate = 
           existingUser.role !== userData.role ||
           !existingUser.isActive ||
-          !existingUser.isVerified;
+          !existingUser.isVerified ||
+          needsPasswordRehash;
 
         if (needsUpdate) {
           await existingUser.update({
+            email: userData.email,
+            password: userData.password, // Plain text - hook will hash it
+            firstName: userData.firstName,
+            lastName: userData.lastName,
             role: userData.role,
             isActive: true,
             isVerified: true
@@ -66,10 +75,10 @@ const seedTestData = async () => {
         }
         userMap[userData.email] = existingUser.id;
       } else {
-        // Create new user
+        // Create new user - pass plain password, let Sequelize hook hash it
         const newUser = await User.create({
           email: userData.email,
-          password: hashedPassword,
+          password: userData.password, // Plain text - beforeCreate hook will hash it
           firstName: userData.firstName,
           lastName: userData.lastName,
           role: userData.role,

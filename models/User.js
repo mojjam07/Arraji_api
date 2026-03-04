@@ -111,12 +111,21 @@ module.exports = (sequelize, DataTypes) => {
     hooks: {
       beforeCreate: async (user) => {
         if (user.password) {
-          const salt = await bcrypt.genSalt(12);
-          user.password = await bcrypt.hash(user.password, salt);
+          // Ensure password is hashed (in case it wasn't hashed before creation)
+          // Check if already hashed (bcrypt hashes start with $2a$, $2b$, or $2y$)
+          if (!user.password.startsWith('$2')) {
+            const salt = await bcrypt.genSalt(12);
+            user.password = await bcrypt.hash(user.password, salt);
+          }
         }
       },
       beforeUpdate: async (user) => {
         if (user.changed('password')) {
+          // Hash the new password
+          const salt = await bcrypt.genSalt(12);
+          user.password = await bcrypt.hash(user.password, salt);
+        } else if (user.password && !user.password.startsWith('$2')) {
+          // Additional safety: rehash if somehow a plain password is still there
           const salt = await bcrypt.genSalt(12);
           user.password = await bcrypt.hash(user.password, salt);
         }
