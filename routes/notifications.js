@@ -92,7 +92,7 @@ router.get('/unread-count', async (req, res, next) => {
 // @desc    Mark notification as read
 // @access  Private
 router.put('/:id/read', [
-  param('id').isInt().toInt()
+  param('id').isUUID()
 ], async (req, res, next) => {
   try {
     const errors = validationResult(req);
@@ -154,7 +154,7 @@ router.put('/mark-all-read', async (req, res, next) => {
 // @desc    Archive notification
 // @access  Private
 router.put('/:id/archive', [
-  param('id').isInt().toInt()
+  param('id').isUUID()
 ], async (req, res, next) => {
   try {
     const errors = validationResult(req);
@@ -191,7 +191,7 @@ router.put('/:id/archive', [
 // @desc    Delete notification (admin only or own notification)
 // @access  Private
 router.delete('/:id', [
-  param('id').isInt().toInt()
+  param('id').isUUID()
 ], async (req, res, next) => {
   try {
     const errors = validationResult(req);
