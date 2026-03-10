@@ -11,7 +11,7 @@ const router = express.Router();
 
 // All admin routes require authentication and admin or officer role
 router.use(protect);
-router.use(authorize(['admin', 'officer']));
+router.use(authorize('admin', 'officer'));
 
 // @route   GET /api/admin/dashboard
 // @desc    Get admin dashboard statistics
